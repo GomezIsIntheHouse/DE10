@@ -1,10 +1,21 @@
 const express = require('express')
 require('dotenv').config()
+
+const {Server: HttpServer} = require('http')
+const {Server: IoServer}= require('socket.io')
+const messages = [];
+
 const app = express();
+
+const http = new HttpServer(app);
+
+const io = new IoServer(http);
 
 const _ = require('lodash');
 
 const Producto = require('./src/services/productos.services')
+
+app.use(express.static(__dirname + '/public'));
 
 app.use(express.json());
 
@@ -30,9 +41,7 @@ app.get('/',(_req,res)=>{
      
 })
 
-// app.get('/next',(_req,res)=>{
-    
-// })
+
 
 
 app.post('/productos', (req,res)=>{
@@ -46,6 +55,20 @@ app.post('/productos', (req,res)=>{
     })
 
     res.redirect('/')
+})
+
+io.on('connection', (socket)=>{
+    console.info('Nuevo cliente conectado')
+    socket.emit('UPDATE_DATA', messages);
+    socket.on('NEW_MESSAGE_TO_SERVER', data => {
+        
+        messages.push(data)
+        console.info(messages)
+
+        io.sockets.emit('NEW_MESSAGE_FROM_SERVER', data );
+    })
+
+    
 })
 
 module.exports=app;
